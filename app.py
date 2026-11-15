@@ -6,23 +6,22 @@ import pypdf
 import json
 import os
 
-# --- GEMINI API BAĞLANTISI ---
-# Streamlit secrets üzerinden API anahtarını güvenli bir şekilde alıyoruz
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    # En kararlı ve hızlı modeli seçiyoruz
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-else:
-    st.error("⚠️ API Anahtarı bulunamadı! Lütfen .streamlit/secrets.toml dosyasına GEMINI_API_KEY eklediğinden emin ol.")
-
-# Sayfa Yapılandırması
+# --- SAYFA YAPILANDIRMASI (En başta ve sadece bir kez olmalı) ---
 st.set_page_config(
-    page_title="10. Sınıf Bulut Akıllı Koç",
+    page_title="10. Sınıf Bulut Koçu",
     page_icon="🎓",
-    layout="wide"
+    layout="centered"
 )
 
+# --- GEMINI API BAĞLANTISI ---
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+else:
+    st.error("⚠️ API Anahtarı bulunamadı! Lütfen secrets ayarlarını kontrol edin.")
+
 VERI_DOSYASI = "veriler.json"
+
 
 # --- VERİLERİ DOSYADAN YÜKLEME / KAYDETME ---
 def verileri_yukle():
