@@ -1,0 +1,57 @@
+{
+    "exams": [
+        {
+            "title": "genel deneme ",
+            "date": "2026-11-20",
+            "subject": "Matematik"
+        }
+    ],
+    "homework": [
+        {
+            "title": "280 soru ve ilk ünitenin tekrarı bide ders kitabı etkinlikleri ",
+            "date": "2026-11-22",
+            "subject": "Matematik",
+            "difficulty": "Zor",
+            "done": false
+        },
+        {
+            "title": "simyacı kitabını oku ve bitir",
+            "date": "2026-11-22",
+            "subject": "Edebiyat",
+            "difficulty": "Orta",
+            "done": false
+        },
+        {
+            "title": "kimya denkleştirmeye kadar bitir toplam 190 soru çöz ",
+            "date": "2026-11-21",
+            "subject": "Kimya",
+            "difficulty": "Zor",
+            "done": false
+        },
+        {
+            "title": "kemosenteze kadar bitir  150 soru çöz",
+            "date": "2026-11-22",
+            "subject": "Biyoloji",
+            "difficulty": "Orta",
+            "done": false
+        },
+        {
+            "title": "fizik 2. üniteye kadar tekrar et ve 170 soru çöz ",
+            "date": "2026-11-22",
+            "subject": "Fizik",
+            "difficulty": "Zor",
+            "done": false
+        },
+        {
+            "title": "paragraf 200 soru ",
+            "date": "2026-11-25",
+            "subject": "Edebiyat",
+            "difficulty": "Zor",
+            "done": false
+        }
+    ],
+    "missing_topics": [
+        "Trigonometri"
+    ],
+    "completed_tasks": []
+}
