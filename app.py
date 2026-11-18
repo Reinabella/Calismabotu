@@ -81,7 +81,7 @@ def pdf_olustur(baslik, icerik):
     pdf.multi_cell(0, 7, turkce_temizle(icerik))
     return bytes(pdf.output())
 
-# --- SOL MENÜYÜ GİZLE VE ŞIK HALE GETİR ---
+# --- SOL MENÜYÜ GİZLE ---
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {display: none;}
@@ -89,16 +89,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1. ANA SAYFA & ÇİZDİĞİN MENÜ DÜZENİ
+# 1. ANA SAYFA
 # ==========================================
 if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
-    # Çizimindeki Sol Üstteki "Ana Sayfaya Dön" ve "KOÇANKA ;)" Başlığı
     st.markdown("<p style='font-size: 0.9rem; color: #888; margin-bottom: 0;'>🏠 Ana sayfadasın</p>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; font-size: 2.3rem; margin-top: 0;'>🧭 KOÇANKA ;)</h1>", unsafe_allow_html=True)
     
     st.write("---")
 
-    # Çizimindeki Alt Alta Sıralı Butonlar (Mobil Uygulama Tarzı)
     if st.button("📅 Takvimim", use_container_width=True):
         sayfa_degistir("📅 Takvimim"); st.rerun()
     if st.button("📅 Günlük Program", use_container_width=True):
@@ -118,7 +116,6 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
 
     st.write("---")
     
-    # Çiziminin Sağ Altındaki Yuvarlak Asistan Butonu (A B Simgesi Yerine Yapay Zeka Asistan)
     col1, col2, col3 = st.columns([2, 1, 2])
     with col2:
         if st.button("🤖 AB", use_container_width=True, type="primary"):
@@ -126,7 +123,6 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
             st.rerun()
     st.caption("<p style='text-align: center;'>Yapay Zeka Asistan için alttaki butona tıkla</p>", unsafe_allow_html=True)
 
-# Ortak Geri Dönüş Butonu (Diğer Sayfalar İçin)
 def geri_don_butonu():
     if st.button("🏠 Ana Sayfaya Dön"):
         sayfa_degistir("🏠 Ana Sayfa")
@@ -146,7 +142,7 @@ elif st.session_state.aktif_sayfa == "📅 Takvimim":
         st.warning("Kayıtlı sınav bulunmuyor.")
 
 # ==========================================
-# 3. GÜNLÜK PROGRAM
+# 3. GÜNLÜK PROGRAM (SİLME ÖZELLİKLİ)
 # ==========================================
 elif st.session_state.aktif_sayfa == "📅 Günlük Program":
     geri_don_butonu()
@@ -162,16 +158,22 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
     st.subheader("📋 Görev Listen")
     tasks = st.session_state.veri.get("daily_tasks", [])
     for i, t in enumerate(tasks):
-        col1, col2 = st.columns([4, 1])
+        col1, col2, col3 = st.columns([3, 1, 1])
         durum = col1.checkbox(t["gorev"], value=t["tamamlandi"], key=f"task_{i}")
         if durum != t["tamamlandi"]:
             tasks[i]["tamamlandi"] = durum
             verileri_kaydet(st.session_state.veri)
             st.rerun()
+        
         if t["tamamlandi"]:
             col2.markdown("### 🥳")
         else:
             col2.markdown("⏳")
+            
+        if col3.button("🗑️ Sil", key=f"del_task_{i}"):
+            tasks.pop(i)
+            verileri_kaydet(st.session_state.veri)
+            st.rerun()
 
 # ==========================================
 # 4. DENEME ANALİZİ
@@ -234,7 +236,7 @@ elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
             st.write(f"🎯 **{s.get('ders')}**: {s.get('konu')} (Tarih: {s.get('tarih')})")
 
 # ==========================================
-# 6. EKSİK KONULARIM
+# 6. EKSİK KONULARIM ("HALLETTİM 😎" BUTONLU)
 # ==========================================
 elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
     geri_don_butonu()
@@ -247,9 +249,19 @@ elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
         verileri_kaydet(st.session_state.veri)
         st.success("Eklendi!")
         st.rerun()
-    for d, konular in st.session_state.veri.get("missing_topics", {}).items():
+
+    st.subheader("📚 Eksik Konuların ve Çözüm Takibi")
+    missing = st.session_state.veri.get("missing_topics", {})
+    for d, konular in missing.items():
         if konular:
-            st.markdown(f"**{d}:** " + ", ".join(konular))
+            st.markdown(f"**{d}**")
+            for idx, konu in enumerate(konular):
+                col1, col2 = st.columns([4, 1])
+                col1.write(f"• {konu}")
+                if col2.button("Hallettim 😎", key=f"hallettim_{d}_{idx}"):
+                    konular.pop(idx)
+                    verileri_kaydet(st.session_state.veri)
+                    st.rerun()
 
 # ==========================================
 # 7. DERS ÇALIŞ
