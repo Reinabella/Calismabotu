@@ -81,128 +81,63 @@ def pdf_olustur(baslik, icerik):
     pdf.multi_cell(0, 7, turkce_temizle(icerik))
     return bytes(pdf.output())
 
-# --- SOL MENÜ (ÇİZDİĞİN ÖZELLİKLER VE SAYFALAR) ---
-sayfalar = [
-    "🏠 Ana Sayfa", 
-    "📅 Takvimim", 
-    "📅 Günlük Program", 
-    "📊 Deneme Analizi", 
-    "📝 Sınavlarım & Ödevlerim", 
-    "❌ Eksik Konularım", 
-    "📚 Ders Çalış", 
-    "📄 Hızlı PDF Özetle", 
-    "❌ Yanlışlarım & Hata Defteri",
-    "🤖 Yapay Zeka Koç (Asistan)"
-]
-
-secilen = st.sidebar.radio(
-    "Menü",
-    sayfalar,
-    index=sayfalar.index(st.session_state.aktif_sayfa) if st.session_state.aktif_sayfa in sayfalar else 0
-)
-if secilen != st.session_state.aktif_sayfa:
-    st.session_state.aktif_sayfa = secilen
-    st.rerun()
+# --- SOL MENÜYÜ GİZLE VE ŞIK HALE GETİR ---
+st.markdown("""
+    <style>
+        [data-testid="stSidebar"] {display: none;}
+    </style>
+""", unsafe_allow_html=True)
 
 # ==========================================
-# 1. ANA SAYFA (ESKİ SADE VE ŞIK HALİ)
+# 1. ANA SAYFA & ÇİZDİĞİN MENÜ DÜZENİ
 # ==========================================
 if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
-    st.markdown("<h1 style='text-align: center; font-size: 2.5rem;'>👋 HOŞ GELDİN!</h1>", unsafe_allow_html=True)
-
-    sozler = [
-        ("Harika işler yapmak için tek yol, yaptığın şeyi sevmektir.", "Steve Jobs"),
-        ("Başarı, her gün tekrarlanan küçük çabaların toplamıdır.", "Robert Collier"),
-        ("Gelecek, bugünden ona hazırlananlara aittir.", "Malcolm X"),
-        ("Zorluklar, başarının değerini artıran süslerdir.", "Moliere")
-    ]
-    if "gunun_sozu" not in st.session_state:
-        st.session_state.gunun_sozu = random.choice(sozler)
+    # Çizimindeki Sol Üstteki "Ana Sayfaya Dön" ve "KOÇANKA ;)" Başlığı
+    st.markdown("<p style='font-size: 0.9rem; color: #888; margin-bottom: 0;'>🏠 Ana sayfadasın</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-size: 2.3rem; margin-top: 0;'>🧭 KOÇANKA ;)</h1>", unsafe_allow_html=True)
     
-    soz, yazar = st.session_state.gunun_sozu
-    st.markdown(f"""
-    <div style="border: 2px solid #4A4A4A; border-radius: 15px; padding: 20px; text-align: center; background-color: rgba(255,255,255,0.03); margin-bottom: 25px;">
-        <p style="font-size: 1.2rem; font-style: italic; margin-bottom: 8px;">"{soz}"</p>
-        <p style="color: #A0A0A0; font-weight: bold; margin: 0;">— {yazar}</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.write("---")
 
-    # Bekleyen Sınavlar
-    st.subheader("Bekleyen Sınavlar")
-    sinavlar = st.session_state.veri.get("exams", [])
-    sinav_sayisi = len(sinavlar)
-    en_yakin_sinav = sorted(sinavlar, key=lambda x: x.get("tarih", "2027-01-01"))[0]["tarih"] if sinavlar else "Yok"
+    # Çizimindeki Alt Alta Sıralı Butonlar (Mobil Uygulama Tarzı)
+    if st.button("📅 Takvimim", use_container_width=True):
+        sayfa_degistir("📅 Takvimim"); st.rerun()
+    if st.button("📅 Günlük Program", use_container_width=True):
+        sayfa_degistir("📅 Günlük Program"); st.rerun()
+    if st.button("📊 Deneme Analizi", use_container_width=True):
+        sayfa_degistir("📊 Deneme Analizi"); st.rerun()
+    if st.button("📝 Sınavlarım & Ödevlerim", use_container_width=True):
+        sayfa_degistir("📝 Sınavlarım & Ödevlerim"); st.rerun()
+    if st.button("❌ Eksik Konularım", use_container_width=True):
+        sayfa_degistir("❌ Eksik Konularım"); st.rerun()
+    if st.button("📚 Ders Çalış", use_container_width=True):
+        sayfa_degistir("📚 Ders Çalış"); st.rerun()
+    if st.button("📄 Hızlı PDF Özetle", use_container_width=True):
+        sayfa_degistir("📄 Hızlı PDF Özetle"); st.rerun()
+    if st.button("❌ Yanlışlarım & Hata Defteri", use_container_width=True):
+        sayfa_degistir("❌ Yanlışlarım & Hata Defteri"); st.rerun()
 
-    c1, c2, c3 = st.columns([1, 2, 2])
-    with c1:
-        st.markdown(f"<div style='border:2px solid #555; border-radius:50%; width:45px; height:45px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:bold;'>{sinav_sayisi}</div>", unsafe_allow_html=True)
-    with c2:
-        st.caption("TARİHİ")
-        st.markdown(f"**📅 {en_yakin_sinav}**")
-    with c3:
-        if st.button("Sınava çalış", key="btn_sinav_calis", use_container_width=True):
-            sayfa_degistir("📚 Ders Çalış")
-            st.rerun()
-
-    st.write("")
-
-    # Bekleyen Ödevler
-    st.subheader("Bekleyen Ödevler")
-    odevler = st.session_state.veri.get("homework", [])
-    odev_sayisi = len(odevler)
-    en_yakin_odev = sorted(odevler, key=lambda x: x.get("tarih", "2027-01-01"))[0]["tarih"] if odevler else "Yok"
-
-    o1, o2, o3 = st.columns([1, 2, 2])
-    with o1:
-        st.markdown(f"<div style='border:2px solid #555; border-radius:50%; width:45px; height:45px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:bold;'>{odev_sayisi}</div>", unsafe_allow_html=True)
-    with o2:
-        st.caption("EN YAKIN TARİH")
-        st.markdown(f"**📅 {en_yakin_odev}**")
-    with o3:
-        if st.button("Ödevi görüntüle", key="btn_odev_gor", use_container_width=True):
-            sayfa_degistir("📝 Sınavlarım & Ödevlerim")
-            st.rerun()
-
-    st.divider()
-
-    # Alt 4 Stratejik Buton
-    st.markdown("<h3 style='text-align: center; letter-spacing: 2px;'>GÜNLÜK PROGRAMINI AL</h3>", unsafe_allow_html=True)
+    st.write("---")
     
-    b1, b2 = st.columns(2)
-    b3, b4 = st.columns(2)
+    # Çiziminin Sağ Altındaki Yuvarlak Asistan Butonu (A B Simgesi Yerine Yapay Zeka Asistan)
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        if st.button("🤖 AB", use_container_width=True, type="primary"):
+            sayfa_degistir("🤖 Yapay Zeka Koç (Asistan)")
+            st.rerun()
+    st.caption("<p style='text-align: center;'>Yapay Zeka Asistan için alttaki butona tıkla</p>", unsafe_allow_html=True)
 
-    with b1:
-        if st.button("📅 Program al", use_container_width=True, type="primary"):
-            sayfa_degistir("📅 Günlük Program")
-            st.rerun()
-    with b2:
-        if st.button("❌ Yanlışlarını not al", use_container_width=True):
-            sayfa_degistir("❌ Yanlışlarım & Hata Defteri")
-            st.rerun()
-    with b3:
-        if st.button("🔍 Yanlışlarına dön", use_container_width=True):
-            sayfa_degistir("❌ Yanlışlarım & Hata Defteri")
-            st.rerun()
-    with b4:
-        if st.button("📚 Konu tekrarı", use_container_width=True):
-            sayfa_degistir("📚 Ders Çalış")
-            st.rerun()
-
-    # Alt Kısma Yapay Zeka Asistan Butonu (Çizimindeki Yuvarlak Buton Hissiyatı)
-    st.write("")
-    if st.button("🤖 Yapay Zeka Asistan ile Konuş", use_container_width=True):
-        sayfa_degistir("🤖 Yapay Zeka Koç (Asistan)")
+# Ortak Geri Dönüş Butonu (Diğer Sayfalar İçin)
+def geri_don_butonu():
+    if st.button("🏠 Ana Sayfaya Dön"):
+        sayfa_degistir("🏠 Ana Sayfa")
         st.rerun()
 
 # ==========================================
 # 2. TAKVİMİM
 # ==========================================
 elif st.session_state.aktif_sayfa == "📅 Takvimim":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("📅 Sınav Takvimi")
-    st.write("Yaklaşan sınavlar ve tarihleri:")
     sinavlar = st.session_state.veri.get("exams", [])
     if sinavlar:
         for s in sorted(sinavlar, key=lambda x: x.get("tarih", "2027-01-01")):
@@ -214,9 +149,7 @@ elif st.session_state.aktif_sayfa == "📅 Takvimim":
 # 3. GÜNLÜK PROGRAM
 # ==========================================
 elif st.session_state.aktif_sayfa == "📅 Günlük Program":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("📅 Günlük Program & Görevler")
     with st.form("yeni_gorev_form"):
         yeni_g = st.text_input("Yeni Görev Ekle (Örn: Matematik 40 soru çöz)")
@@ -244,9 +177,7 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
 # 4. DENEME ANALİZİ
 # ==========================================
 elif st.session_state.aktif_sayfa == "📊 Deneme Analizi":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("📊 Deneme Sınavı Analizi")
     denemeler = st.session_state.veri.get("denemeler", [])
 
@@ -276,9 +207,7 @@ elif st.session_state.aktif_sayfa == "📊 Deneme Analizi":
 # 5. SINAVLARIM & ÖDEVLERİM
 # ==========================================
 elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("📝 Sınav & Ödev Yönetimi")
     tab1, tab2 = st.tabs(["Ödevler", "Sınavlar"])
     with tab1:
@@ -308,9 +237,7 @@ elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
 # 6. EKSİK KONULARIM
 # ==========================================
 elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("❌ Eksik Konu Takibi")
     dersler = ["Matematik", "Fizik", "Kimya", "Biyoloji", "Türkçe"]
     secilen_ders_eksik = st.selectbox("Ders Seç", dersler)
@@ -328,9 +255,7 @@ elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
 # 7. DERS ÇALIŞ
 # ==========================================
 elif st.session_state.aktif_sayfa == "📚 Ders Çalış":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("📚 Akıllı Ders Çalışma Asistanı")
     ders = st.selectbox("Ders Seç", ["Matematik", "Fizik", "Kimya", "Biyoloji", "Türkçe"])
     konu = st.text_input("Konu Adı")
@@ -348,9 +273,7 @@ elif st.session_state.aktif_sayfa == "📚 Ders Çalış":
 # 8. HIZLI PDF ÖZETLE
 # ==========================================
 elif st.session_state.aktif_sayfa == "📄 Hızlı PDF Özetle":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("📄 Hızlı PDF Özetle")
     pdf_text = st.text_area("Metni Yapıştır:")
     if st.button("Önemli Notları Çıkar", type="primary") and pdf_text:
@@ -361,9 +284,7 @@ elif st.session_state.aktif_sayfa == "📄 Hızlı PDF Özetle":
 # 9. YANLIŞLARIM & HATA DEFTERİ
 # ==========================================
 elif st.session_state.aktif_sayfa == "❌ Yanlışlarım & Hata Defteri":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("❌ Yanlışlarım & Hata Defteri")
     tab1, tab2 = st.tabs(["Yanlış Not Et", "📸 Hata Defteri"])
     with tab1:
@@ -387,9 +308,7 @@ elif st.session_state.aktif_sayfa == "❌ Yanlışlarım & Hata Defteri":
 # 10. YAPAY ZEKA KOÇ (ASİSTAN)
 # ==========================================
 elif st.session_state.aktif_sayfa == "🤖 Yapay Zeka Koç (Asistan)":
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa"); st.rerun()
-
+    geri_don_butonu()
     st.title("🤖 Yapay Zeka Koçun")
     if st.button("📊 Haftalık Raporumu Ver", type="primary"):
         if gemini_model:
