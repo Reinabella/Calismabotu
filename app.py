@@ -22,28 +22,34 @@ else:
 
 VERI_DOSYASI = "veriler.json"
 
-# --- VERİ YÖNETİMİ ---
+# --- VERİ YÖNETİMİ (GÜVENLİ) ---
 def verileri_yukle():
-    if os.path.exists(VERI_DOSYASI):
-        try:
-            with open(VERI_DOSYASI, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                # Yeni eklenen veri alanlarını garanti altına al
-                data.setdefault("exams", [{"ders": "Matematik", "konu": "Fonksiyonlar", "tarih": "2027-06-17"}])
-                data.setdefault("homework", [{"ders": "Fizik", "aciklama": "Elektrik Akımı Testleri", "tarih": "2026-07-15"}])
-                data.setdefault("mistakes", [])
-                data.setdefault("daily_program", "")
-                data.setdefault("program_subjects", ["Matematik", "Fizik", "Kimya"])
-                return data
-        except:
-            pass
-    return {
+    default_data = {
         "exams": [{"ders": "Matematik", "konu": "Fonksiyonlar", "tarih": "2027-06-17"}],
         "homework": [{"ders": "Fizik", "aciklama": "Elektrik Akımı Testleri", "tarih": "2026-07-15"}],
         "mistakes": [],
         "daily_program": "",
         "program_subjects": ["Matematik", "Fizik", "Kimya"]
     }
+    if os.path.exists(VERI_DOSYASI):
+        try:
+            with open(VERI_DOSYASI, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                # Eksik alanları tamamla
+                for k, v in default_data.items():
+                    if k not in data:
+                        data[k] = v
+                # Sınav ve ödevlerin 'tarih' anahtarına sahip olduğundan emin ol
+                for s in data.get("exams", []):
+                    if "tarih" not in s:
+                        s["tarih"] = "2027-06-17"
+                for o in data.get("homework", []):
+                    if "tarih" not in o:
+                        o["tarih"] = "2026-07-15"
+                return data
+        except:
+            pass
+    return default_data
 
 def verileri_kaydet(veri):
     with open(VERI_DOSYASI, "w", encoding="utf-8") as f:
@@ -52,14 +58,13 @@ def verileri_kaydet(veri):
 if "veri" not in st.session_state:
     st.session_state.veri = verileri_yukle()
 
-# Sayfa Yönlendirme Durumu (Butonlar ve Sol Menü Senkronizasyonu)
 if "aktif_sayfa" not in st.session_state:
     st.session_state.aktif_sayfa = "🏠 Ana Sayfa"
 
 def sayfa_degistir(hedef_sayfa):
     st.session_state.aktif_sayfa = hedef_sayfa
 
-# --- PDF OLUŞTURUCU (Türkçe Karakter Destekli Temiz Format) ---
+# --- PDF OLUŞTURUCU ---
 def turkce_temizle(metin):
     degisim = {"ğ": "g", "Ğ": "G", "ü": "u", "Ü": "U", "ş": "s", "Ş": "S", "ı": "i", "İ": "I", "ö": "o", "Ö": "O", "ç": "c", "Ç": "C"}
     for k, v in degisim.items():
@@ -73,8 +78,7 @@ def pdf_olustur(baslik, icerik):
     pdf.cell(0, 10, turkce_temizle(baslik), ln=True, align="C")
     pdf.ln(5)
     pdf.set_font("Helvetica", "", 11)
-    temiz_icerik = turkce_temizle(icerik)
-    pdf.multi_cell(0, 7, temiz_icerik)
+    pdf.multi_cell(0, 7, turkce_temizle(icerik))
     return bytes(pdf.output())
 
 # --- SOL MENÜ (SIDEBAR) ---
@@ -82,20 +86,18 @@ sayfalar = ["🏠 Ana Sayfa", "📅 Günlük Program", "❌ Yanlışlarım", "�
 secilen = st.sidebar.radio(
     "Menü",
     sayfalar,
-    index=sayfalar.index(st.session_state.aktif_sayfa)
+    index=sayfalar.index(st.session_state.aktif_sayfa) if st.session_state.aktif_sayfa in sayfalar else 0
 )
 if secilen != st.session_state.aktif_sayfa:
     st.session_state.aktif_sayfa = secilen
     st.rerun()
 
 # ==========================================
-# 1. ANA SAYFA (ÇİZİMİNE BİREBİR UYGUN)
+# 1. ANA SAYFA
 # ==========================================
 if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
-    # Üst Karşılama Başlığı
     st.markdown("<h1 style='text-align: center; font-size: 2.5rem;'>👋 HOŞ GELDİN!</h1>", unsafe_allow_html=True)
 
-    # Motivasyon Sözü Kutusu
     sozler = [
         ("Harika işler yapmak için tek yol, yaptığın şeyi sevmektir.", "Steve Jobs"),
         ("Başarı, her gün tekrarlanan küçük çabaların toplamıdır.", "Robert Collier"),
@@ -113,11 +115,11 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
     </div>
     """, unsafe_allow_html=True)
 
-    # Bekleyen Sınavlar Bölümü
+    # Bekleyen Sınavlar
     st.subheader("Bekleyen Sınavlar")
     sinavlar = st.session_state.veri.get("exams", [])
     sinav_sayisi = len(sinavlar)
-    en_yakin_sinav = sorted(sinavlar, key=lambda x: x["tarih"])[0]["tarih"] if sinavlar else "Yok"
+    en_yakin_sinav = sorted(sinavlar, key=lambda x: x.get("tarih", "2027-01-01"))[0]["tarih"] if sinavlar else "Yok"
 
     c1, c2, c3 = st.columns([1, 2, 2])
     with c1:
@@ -132,11 +134,11 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
 
     st.write("")
 
-    # Bekleyen Ödevler Bölümü
+    # Bekleyen Ödevler
     st.subheader("Bekleyen Ödevler")
     odevler = st.session_state.veri.get("homework", [])
     odev_sayisi = len(odevler)
-    en_yakin_odev = sorted(odevler, key=lambda x: x["tarih"])[0]["tarih"] if odevler else "Yok"
+    en_yakin_odev = sorted(odevler, key=lambda x: x.get("tarih", "2027-01-01"))[0]["tarih"] if odevler else "Yok"
 
     o1, o2, o3 = st.columns([1, 2, 2])
     with o1:
@@ -151,7 +153,7 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
 
     st.divider()
 
-    # GÜNLÜK PROGRAMINI AL (Alt 4 Stratejik Buton)
+    # Alt 4 Stratejik Buton
     st.markdown("<h3 style='text-align: center; letter-spacing: 2px;'>GÜNLÜK PROGRAMINI AL</h3>", unsafe_allow_html=True)
     
     b1, b2 = st.columns(2)
@@ -190,8 +192,8 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
             st.error("API Anahtarı bağlı değil!")
         else:
             with st.spinner("Koçun ödevlerini ve eksik konularını inceliyor..."):
-                odev_listesi = ", ".join([f"{o['ders']} ({o['aciklama']})" for o in st.session_state.veri["homework"]])
-                yanlis_listesi = ", ".join([f"{y['ders']} - {y['konu']} ({y['yanlis_sayisi']} yanlış)" for y in st.session_state.veri["mistakes"]])
+                odev_listesi = ", ".join([f"{o.get('ders', '')} ({o.get('aciklama', '')})" for o in st.session_state.veri["homework"]])
+                yanlis_listesi = ", ".join([f"{y.get('ders', '')} - {y.get('konu', '')} ({y.get('yanlis_sayisi', 0)} yanlış)" for y in st.session_state.veri["mistakes"]])
                 
                 prompt = f"""
                 Sen 10. sınıf öğrencisine koçluk yapan bir eğitim asistanısın.
@@ -204,7 +206,6 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
                 cevap = gemini_model.generate_content(prompt).text
                 st.session_state.veri["daily_program"] = cevap
                 
-                # Programdaki dersleri otomatik yakala (Yanlışlarım sayfası için)
                 for satir in cevap.split("\n"):
                     if "DERSLER:" in satir:
                         dersler = [d.strip() for d in satir.split("DERSLER:")[1].split(",")]
@@ -249,12 +250,12 @@ elif st.session_state.aktif_sayfa == "❌ Yanlışlarım":
     yanlislar = st.session_state.veri.get("mistakes", [])
     if yanlislar:
         for y in reversed(yanlislar):
-            st.info(f"**{y['tarih']}** | **{y['ders']}** — {y['konu']} (**{y['yanlis_sayisi']} Yanlış**)")
+            st.info(f"**{y.get('tarih', '')}** | **{y.get('ders', '')}** — {y.get('konu', '')} (**{y.get('yanlis_sayisi', 0)} Yanlış**)")
     else:
         st.caption("Henüz kaydedilmiş bir yanlışın yok.")
 
 # ==========================================
-# 4. YANLIŞLARINA DÖN (EKSİK ANALİZİ)
+# 4. YANLIŞLARINA DÖN
 # ==========================================
 elif st.session_state.aktif_sayfa == "🔍 Yanlışlarına Dön":
     if st.button("⬅️ Ana Sayfaya Dön"):
@@ -269,24 +270,23 @@ elif st.session_state.aktif_sayfa == "🔍 Yanlışlarına Dön":
     else:
         st.subheader("🚨 Eksik Olduğun Konular Listesi")
         for y in yanlislar:
-            st.write(f"- **{y['ders']}**: {y['konu']} ({y['yanlis_sayisi']} yanlış)")
+            st.write(f"- **{y.get('ders', '')}**: {y.get('konu', '')} ({y.get('yanlis_sayisi', 0)} yanlış)")
 
         if st.button("🧠 Yapay Zeka ile Eksik Analizi ve Görev Belirle", type="primary"):
             if gemini_model:
-                with st.spinner("Bilgi seviyen ölçülüyor ve yapman gerekenler belirleniyor..."):
+                with st.spinner("Bilgi seviyen ölçülüyor..."):
                     ozet_veri = json.dumps(yanlislar, ensure_ascii=False)
                     prompt = f"""
                     Aşağıda bir 10. sınıf öğrencisinin kaydettiği yanlış sayıları ve konular var:
                     {ozet_veri}
-                    
                     1. Öğrencinin bu konulardaki bilgi seviyesini yorumla.
-                    2. Eksiklerini kapatması için somut, adım adım yapması gerekenleri (kaç soru çözmeli, nasıl çalışmalı) listele.
+                    2. Eksiklerini kapatması için somut, adım adım yapması gerekenleri listele.
                     """
                     analiz = gemini_model.generate_content(prompt).text
                     st.markdown(analiz)
 
 # ==========================================
-# 5. KONU TEKRARI (MİNİK PDF OLUŞTURUCU)
+# 5. KONU TEKRARI (MİNİK PDF)
 # ==========================================
 elif st.session_state.aktif_sayfa == "📚 Konu Tekrarı (PDF)":
     if st.button("⬅️ Ana Sayfaya Dön"):
@@ -297,7 +297,7 @@ elif st.session_state.aktif_sayfa == "📚 Konu Tekrarı (PDF)":
     st.write("Eksik olduğun konuyu seç veya yaz; yapay zeka sana özel özet anlatsın ve indirilebilir minik PDF hazırlasın.")
 
     yanlislar = st.session_state.veri.get("mistakes", [])
-    oneri_konular = [f"{y['ders']} - {y['konu']}" for y in yanlislar]
+    oneri_konular = [f"{y.get('ders', '')} - {y.get('konu', '')}" for y in yanlislar]
     
     konu_secimi = st.text_input(
         "Tekrar Etmek İstediğin Ders ve Konu",
@@ -308,7 +308,7 @@ elif st.session_state.aktif_sayfa == "📚 Konu Tekrarı (PDF)":
         if gemini_model and konu_secimi:
             with st.spinner("Özel ders notun ve PDF dosyan hazırlanıyor..."):
                 prompt = f"""
-                10. sınıf seviyesinde '{konu_secimi}' konusunu öğrenciye çok net, akılda kalıcı, formülleri ve püf noktaları içeren bir özet ders notu şeklinde anlat. Başlıklar kullan.
+                10. sınıf seviyesinde '{konu_secimi}' konusunu öğrenciye çok net, akılda kalıcı, formülleri ve püf noktaları içeren bir özet ders notu şeklinde anlat.
                 """
                 ders_notu = gemini_model.generate_content(prompt).text
                 st.markdown(ders_notu)
@@ -347,7 +347,7 @@ elif st.session_state.aktif_sayfa == "📝 Sınav & Ödev Ekle":
         
         for i, o in enumerate(st.session_state.veri["homework"]):
             col1, col2 = st.columns([4, 1])
-            col1.write(f"📌 **{o['ders']}**: {o['aciklama']} (Tarih: {o['tarih']})")
+            col1.write(f"📌 **{o.get('ders', '')}**: {o.get('aciklama', '')} (Tarih: {o.get('tarih', '')})")
             if col2.button("Sil", key=f"sil_odev_{i}"):
                 st.session_state.veri["homework"].pop(i)
                 verileri_kaydet(st.session_state.veri)
@@ -367,7 +367,7 @@ elif st.session_state.aktif_sayfa == "📝 Sınav & Ödev Ekle":
 
         for i, s in enumerate(st.session_state.veri["exams"]):
             col1, col2 = st.columns([4, 1])
-            col1.write(f"🎯 **{s['ders']}**: {s['konu']} (Tarih: {s['tarih']})")
+            col1.write(f"🎯 **{s.get('ders', '')}**: {s.get('konu', '')} (Tarih: {s.get('tarih', '')})")
             if col2.button("Sil", key=f"sil_sinav_{i}"):
                 st.session_state.veri["exams"].pop(i)
                 verileri_kaydet(st.session_state.veri)
