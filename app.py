@@ -13,12 +13,16 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- GEMINI API BAĞLANTISI ---
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-else:
-    gemini_model = None
+# --- GEMINI API BAĞLANTISI (GÜVENLİ KONTROL) ---
+gemini_model = None
+try:
+    if "GEMINI_API_KEY" in st.secrets:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        if api_key and api_key.strip():
+            genai.configure(api_key=api_key)
+            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+except Exception as e:
+    print(f"API Bağlantı Hatası: {e}")
 
 VERI_DOSYASI = "veriler.json"
 
@@ -35,11 +39,9 @@ def verileri_yukle():
         try:
             with open(VERI_DOSYASI, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                # Eksik alanları tamamla
                 for k, v in default_data.items():
                     if k not in data:
                         data[k] = v
-                # Sınav ve ödevlerin 'tarih' anahtarına sahip olduğundan emin ol
                 for s in data.get("exams", []):
                     if "tarih" not in s:
                         s["tarih"] = "2027-06-17"
@@ -115,7 +117,6 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
     </div>
     """, unsafe_allow_html=True)
 
-    # Bekleyen Sınavlar
     st.subheader("Bekleyen Sınavlar")
     sinavlar = st.session_state.veri.get("exams", [])
     sinav_sayisi = len(sinavlar)
@@ -134,7 +135,6 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
 
     st.write("")
 
-    # Bekleyen Ödevler
     st.subheader("Bekleyen Ödevler")
     odevler = st.session_state.veri.get("homework", [])
     odev_sayisi = len(odevler)
@@ -153,7 +153,6 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
 
     st.divider()
 
-    # Alt 4 Stratejik Buton
     st.markdown("<h3 style='text-align: center; letter-spacing: 2px;'>GÜNLÜK PROGRAMINI AL</h3>", unsafe_allow_html=True)
     
     b1, b2 = st.columns(2)
@@ -189,29 +188,32 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
 
     if st.button("✨ Bugünün Programını Oluştur", type="primary"):
         if not gemini_model:
-            st.error("API Anahtarı bağlı değil!")
+            st.error("⚠️ Gemini API anahtarı doğrulanamadı! Lütfen Streamlit Cloud 'Secrets' bölümünden anahtarını kontrol edip uygulamayı yeniden başlat (Reboot).")
         else:
             with st.spinner("Koçun ödevlerini ve eksik konularını inceliyor..."):
-                odev_listesi = ", ".join([f"{o.get('ders', '')} ({o.get('aciklama', '')})" for o in st.session_state.veri["homework"]])
-                yanlis_listesi = ", ".join([f"{y.get('ders', '')} - {y.get('konu', '')} ({y.get('yanlis_sayisi', 0)} yanlış)" for y in st.session_state.veri["mistakes"]])
-                
-                prompt = f"""
-                Sen 10. sınıf öğrencisine koçluk yapan bir eğitim asistanısın.
-                Öğrencinin yaklaşan ödevleri: {odev_listesi if odev_listesi else 'Yok'}
-                Öğrencinin son yanlış yaptığı konular: {yanlis_listesi if yanlis_listesi else 'Henüz kayıt yok'}
-                
-                Buna göre öğrenciye bugün için saatlik/bloklar halinde uygulanabilir, motive edici bir günlük çalışma programı hazırla. 
-                Ayrıca yanıtının en son satırına sadece bugün çalışılacak 3 ana dersin adını virgülle ayırarak 'DERSLER: Ders1, Ders2, Ders3' formatında yaz.
-                """
-                cevap = gemini_model.generate_content(prompt).text
-                st.session_state.veri["daily_program"] = cevap
-                
-                for satir in cevap.split("\n"):
-                    if "DERSLER:" in satir:
-                        dersler = [d.strip() for d in satir.split("DERSLER:")[1].split(",")]
-                        st.session_state.veri["program_subjects"] = dersler
-                
-                verileri_kaydet(st.session_state.veri)
+                try:
+                    odev_listesi = ", ".join([f"{o.get('ders', '')} ({o.get('aciklama', '')})" for o in st.session_state.veri["homework"]])
+                    yanlis_listesi = ", ".join([f"{y.get('ders', '')} - {y.get('konu', '')} ({y.get('yanlis_sayisi', 0)} yanlış)" for y in st.session_state.veri["mistakes"]])
+                    
+                    prompt = f"""
+                    Sen 10. sınıf öğrencisine koçluk yapan bir eğitim asistanısın.
+                    Öğrencinin yaklaşan ödevleri: {odev_listesi if odev_listesi else 'Yok'}
+                    Öğrencinin son yanlış yaptığı konular: {yanlis_listesi if yanlis_listesi else 'Henüz kayıt yok'}
+                    
+                    Buna göre öğrenciye bugün için saatlik/bloklar halinde uygulanabilir, motive edici bir günlük çalışma programı hazırla. 
+                    Ayrıca yanıtının en son satırına sadece bugün çalışılacak 3 ana dersin adını virgülle ayırarak 'DERSLER: Ders1, Ders2, Ders3' formatında yaz.
+                    """
+                    cevap = gemini_model.generate_content(prompt).text
+                    st.session_state.veri["daily_program"] = cevap
+                    
+                    for satir in cevap.split("\n"):
+                        if "DERSLER:" in satir:
+                            dersler = [d.strip() for d in satir.split("DERSLER:")[1].split(",")]
+                            st.session_state.veri["program_subjects"] = dersler
+                    
+                    verileri_kaydet(st.session_state.veri)
+                except Exception as e:
+                    st.error(f"Yapay zeka yanıt üretirken bir hata oluştu: {e}")
 
     if st.session_state.veri.get("daily_program"):
         st.markdown(st.session_state.veri["daily_program"])
@@ -273,17 +275,22 @@ elif st.session_state.aktif_sayfa == "🔍 Yanlışlarına Dön":
             st.write(f"- **{y.get('ders', '')}**: {y.get('konu', '')} ({y.get('yanlis_sayisi', 0)} yanlış)")
 
         if st.button("🧠 Yapay Zeka ile Eksik Analizi ve Görev Belirle", type="primary"):
-            if gemini_model:
+            if not gemini_model:
+                st.error("API Anahtarı doğrulanamadı!")
+            else:
                 with st.spinner("Bilgi seviyen ölçülüyor..."):
-                    ozet_veri = json.dumps(yanlislar, ensure_ascii=False)
-                    prompt = f"""
-                    Aşağıda bir 10. sınıf öğrencisinin kaydettiği yanlış sayıları ve konular var:
-                    {ozet_veri}
-                    1. Öğrencinin bu konulardaki bilgi seviyesini yorumla.
-                    2. Eksiklerini kapatması için somut, adım adım yapması gerekenleri listele.
-                    """
-                    analiz = gemini_model.generate_content(prompt).text
-                    st.markdown(analiz)
+                    try:
+                        ozet_veri = json.dumps(yanlislar, ensure_ascii=False)
+                        prompt = f"""
+                        Aşağıda bir 10. sınıf öğrencisinin kaydettiği yanlış sayıları ve konular var:
+                        {ozet_veri}
+                        1. Öğrencinin bu konulardaki bilgi seviyesini yorumla.
+                        2. Eksiklerini kapatması için somut, adım adım yapması gerekenleri listele.
+                        """
+                        analiz = gemini_model.generate_content(prompt).text
+                        st.markdown(analiz)
+                    except Exception as e:
+                        st.error(f"Analiz üretilirken hata oluştu: {e}")
 
 # ==========================================
 # 5. KONU TEKRARI (MİNİK PDF)
@@ -305,21 +312,26 @@ elif st.session_state.aktif_sayfa == "📚 Konu Tekrarı (PDF)":
     )
 
     if st.button("📄 Konuyu Anlat ve Minik PDF Hazırla", type="primary"):
-        if gemini_model and konu_secimi:
+        if not gemini_model:
+            st.error("API Anahtarı doğrulanamadı!")
+        elif konu_secimi:
             with st.spinner("Özel ders notun ve PDF dosyan hazırlanıyor..."):
-                prompt = f"""
-                10. sınıf seviyesinde '{konu_secimi}' konusunu öğrenciye çok net, akılda kalıcı, formülleri ve püf noktaları içeren bir özet ders notu şeklinde anlat.
-                """
-                ders_notu = gemini_model.generate_content(prompt).text
-                st.markdown(ders_notu)
-                
-                pdf_bytes = pdf_olustur(f"10. Sinif Konu Ozeti: {konu_secimi}", ders_notu)
-                st.download_button(
-                    label="📥 Minik Ders Notu PDF'ini İndir",
-                    data=pdf_bytes,
-                    file_name="konu_ozeti.pdf",
-                    mime="application/pdf"
-                )
+                try:
+                    prompt = f"""
+                    10. sınıf seviyesinde '{konu_secimi}' konusunu öğrenciye çok net, akılda kalıcı, formülleri ve püf noktaları içeren bir özet ders notu şeklinde anlat.
+                    """
+                    ders_notu = gemini_model.generate_content(prompt).text
+                    st.markdown(ders_notu)
+                    
+                    pdf_bytes = pdf_olustur(f"10. Sinif Konu Ozeti: {konu_secimi}", ders_notu)
+                    st.download_button(
+                        label="📥 Minik Ders Notu PDF'ini İndir",
+                        data=pdf_bytes,
+                        file_name="konu_ozeti.pdf",
+                        mime="application/pdf"
+                    )
+                except Exception as e:
+                    st.error(f"PDF veya içerik üretilirken hata oluştu: {e}")
 
 # ==========================================
 # 6. SINAV & ÖDEV YÖNETİMİ
