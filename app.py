@@ -65,11 +65,6 @@ def sayfa_degistir(hedef_sayfa):
     st.session_state.aktif_sayfa = hedef_sayfa
 
 # --- YARDIMCI FONKSİYONLAR ---
-def geri_don_butonu():
-    if st.button("⬅️ Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa")
-        st.rerun()
-
 def turkce_temizle(metin):
     degisim = {"ğ": "g", "Ğ": "G", "ü": "u", "Ü": "U", "ş": "s", "Ş": "S", "ı": "i", "İ": "I", "ö": "o", "Ö": "O", "ç": "c", "Ç": "C"}
     for k, v in degisim.items():
@@ -86,15 +81,31 @@ def pdf_olustur(baslik, icerik):
     pdf.multi_cell(0, 7, turkce_temizle(icerik))
     return bytes(pdf.output())
 
-# --- SOL MENÜYÜ GİZLE ---
-st.markdown("""
-    <style>
-        [data-testid="stSidebar"] {display: none;}
-    </style>
-""", unsafe_allow_html=True)
+# --- SOL MENÜ (SIDEBAR) ---
+sayfalar = [
+    "🏠 Ana Sayfa", 
+    "📅 Takvimim", 
+    "📅 Günlük Program", 
+    "📊 Deneme Analizi", 
+    "📝 Sınavlarım & Ödevlerim", 
+    "❌ Eksik Konularım", 
+    "📚 Ders Çalış", 
+    "📄 Hızlı PDF Özetle", 
+    "❌ Yanlışlarım & Hata Defteri",
+    "🤖 Yapay Zeka Koç (Asistan)"
+]
+
+secilen = st.sidebar.radio(
+    "Menü",
+    sayfalar,
+    index=sayfalar.index(st.session_state.aktif_sayfa) if st.session_state.aktif_sayfa in sayfalar else 0
+)
+if secilen != st.session_state.aktif_sayfa:
+    st.session_state.aktif_sayfa = secilen
+    st.rerun()
 
 # ==========================================
-# SAYFA YÖNETİMİ (KESİNTİSİZ IF-ELIF ZİNCİRİ)
+# SAYFA YÖNETİMİ
 # ==========================================
 
 if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
@@ -187,14 +198,12 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
             sayfa_degistir("📊 Deneme Analizi")
             st.rerun()
 
-    # Alt Kısım Yapay Zeka Asistan Butonu
     st.write("")
     if st.button("🤖 Yapay Zeka Asistan ile Konuş", use_container_width=True):
         sayfa_degistir("🤖 Yapay Zeka Koç (Asistan)")
         st.rerun()
 
 elif st.session_state.aktif_sayfa == "📅 Takvimim":
-    geri_don_butonu()
     st.title("📅 Sınav Takvimi")
     sinavlar = st.session_state.veri.get("exams", [])
     if sinavlar:
@@ -204,7 +213,6 @@ elif st.session_state.aktif_sayfa == "📅 Takvimim":
         st.warning("Kayıtlı sınav bulunmuyor.")
 
 elif st.session_state.aktif_sayfa == "📅 Günlük Program":
-    geri_don_butonu()
     st.title("📅 Günlük Program & Görevler")
     with st.form("yeni_gorev_form"):
         yeni_g = st.text_input("Yeni Görev Ekle (Örn: Matematik 40 soru çöz)")
@@ -235,7 +243,6 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
             st.rerun()
 
 elif st.session_state.aktif_sayfa == "📊 Deneme Analizi":
-    geri_don_butonu()
     st.title("📊 Deneme Sınavı Analizi")
     denemeler = st.session_state.veri.get("denemeler", [])
 
@@ -262,7 +269,6 @@ elif st.session_state.aktif_sayfa == "📊 Deneme Analizi":
                 st.markdown(deneme["program"])
 
 elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
-    geri_don_butonu()
     st.title("📝 Sınav & Ödev Yönetimi")
     tab1, tab2 = st.tabs(["Ödevler", "Sınavlar"])
     with tab1:
@@ -299,7 +305,6 @@ elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
                 st.rerun()
 
 elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
-    geri_don_butonu()
     st.title("❌ Eksik Konu Takibi")
     dersler = ["Matematik", "Fizik", "Kimya", "Biyoloji", "Türkçe"]
     secilen_ders_eksik = st.selectbox("Ders Seç", dersler)
@@ -326,7 +331,6 @@ elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
                     st.rerun()
 
 elif st.session_state.aktif_sayfa == "📚 Ders Çalış":
-    geri_don_butonu()
     st.title("📚 Akıllı Ders Çalışma Asistanı")
     ders = st.selectbox("Ders Seç", ["Matematik", "Fizik", "Kimya", "Biyoloji", "Türkçe"])
     konu = st.text_input("Konu Adı")
@@ -341,7 +345,6 @@ elif st.session_state.aktif_sayfa == "📚 Ders Çalış":
             st.markdown(gemini_model.generate_content(f"10. sınıf öğrencisinin sorusu: {soru}").text)
 
 elif st.session_state.aktif_sayfa == "📄 Hızlı PDF Özetle":
-    geri_don_butonu()
     st.title("📄 Hızlı PDF Özetle")
     pdf_text = st.text_area("Metni Yapıştır:")
     if st.button("Önemli Notları Çıkar", type="primary") and pdf_text:
@@ -349,7 +352,6 @@ elif st.session_state.aktif_sayfa == "📄 Hızlı PDF Özetle":
             st.markdown(gemini_model.generate_content(f"Özetle:\n\n{pdf_text}").text)
 
 elif st.session_state.aktif_sayfa == "❌ Yanlışlarım & Hata Defteri":
-    geri_don_butonu()
     st.title("❌ Yanlışlarım & Hata Defteri")
     tab1, tab2 = st.tabs(["Yanlış Not Et", "📸 Hata Defteri"])
     with tab1:
@@ -370,7 +372,6 @@ elif st.session_state.aktif_sayfa == "❌ Yanlışlarım & Hata Defteri":
                 st.markdown(gemini_model.generate_content(f"Şu soruyu çöz:\n\n{hata_notu}").text)
 
 elif st.session_state.aktif_sayfa == "🤖 Yapay Zeka Koç (Asistan)":
-    geri_don_butonu()
     st.title("🤖 Yapay Zeka Koçun")
     if st.button("📊 Haftalık Raporumu Ver", type="primary"):
         if gemini_model:
