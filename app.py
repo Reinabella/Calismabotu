@@ -20,8 +20,8 @@ try:
         api_key = st.secrets["GEMINI_API_KEY"]
         if api_key and api_key.strip():
             genai.configure(api_key=api_key)
-            # En güncel kararlı model adı kullanıldı
-            gemini_model = genai.GenerativeModel("gemini-2.5-flash")
+            # Hatada belirtilen en güncel model adı kullanıldı
+            gemini_model = genai.GenerativeModel("gemini-3.8-flash")
 except Exception as e:
     print(f"API Bağlantı Hatası: {e}")
 
