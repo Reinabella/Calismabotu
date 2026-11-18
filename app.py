@@ -64,7 +64,12 @@ if "aktif_sayfa" not in st.session_state:
 def sayfa_degistir(hedef_sayfa):
     st.session_state.aktif_sayfa = hedef_sayfa
 
-# --- PDF OLUŞTURUCU ---
+# --- YARDIMCI FONKSİYONLAR ---
+def geri_don_butonu():
+    if st.button("🏠 Ana Sayfaya Dön"):
+        sayfa_degistir("🏠 Ana Sayfa")
+        st.rerun()
+
 def turkce_temizle(metin):
     degisim = {"ğ": "g", "Ğ": "G", "ü": "u", "Ü": "U", "ş": "s", "Ş": "S", "ı": "i", "İ": "I", "ö": "o", "Ö": "O", "ç": "c", "Ç": "C"}
     for k, v in degisim.items():
@@ -81,7 +86,7 @@ def pdf_olustur(baslik, icerik):
     pdf.multi_cell(0, 7, turkce_temizle(icerik))
     return bytes(pdf.output())
 
-# --- SOL MENÜYÜ GİZLE VE ŞIK HALE GETİR ---
+# --- SOL MENÜYÜ GİZLE ---
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {display: none;}
@@ -89,8 +94,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1. ANA SAYFA & ÇİZDİĞİN MENÜ DÜZENİ
+# SAYFA YÖNETİMİ (KESİNTİSİZ IF-ELIF ZİNCİRİ)
 # ==========================================
+
 if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
     st.markdown("<p style='font-size: 0.9rem; color: #888; margin-bottom: 0;'>🏠 Ana sayfadasın</p>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; font-size: 2.3rem; margin-top: 0;'>🧭 KOÇANKA ;)</h1>", unsafe_allow_html=True)
@@ -123,14 +129,6 @@ if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
             st.rerun()
     st.caption("<p style='text-align: center;'>Yapay Zeka Asistan için alttaki butona tıkla</p>", unsafe_allow_html=True)
 
-def geri_don_butonu():
-    if st.button("🏠 Ana Sayfaya Dön"):
-        sayfa_degistir("🏠 Ana Sayfa")
-        st.rerun()
-
-# ==========================================
-# 2. TAKVİMİM
-# ==========================================
 elif st.session_state.aktif_sayfa == "📅 Takvimim":
     geri_don_butonu()
     st.title("📅 Sınav Takvimi")
@@ -141,9 +139,6 @@ elif st.session_state.aktif_sayfa == "📅 Takvimim":
     else:
         st.warning("Kayıtlı sınav bulunmuyor.")
 
-# ==========================================
-# 3. GÜNLÜK PROGRAM
-# ==========================================
 elif st.session_state.aktif_sayfa == "📅 Günlük Program":
     geri_don_butonu()
     st.title("📅 Günlük Program & Görevler")
@@ -175,9 +170,6 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
             verileri_kaydet(st.session_state.veri)
             st.rerun()
 
-# ==========================================
-# 4. DENEME ANALİZİ
-# ==========================================
 elif st.session_state.aktif_sayfa == "📊 Deneme Analizi":
     geri_don_butonu()
     st.title("📊 Deneme Sınavı Analizi")
@@ -205,9 +197,6 @@ elif st.session_state.aktif_sayfa == "📊 Deneme Analizi":
                 st.write(f"Matematik: {deneme['mat']}")
                 st.markdown(deneme["program"])
 
-# ==========================================
-# 5. SINAVLARIM & ÖDEVLERİM
-# ==========================================
 elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
     geri_don_butonu()
     st.title("📝 Sınav & Ödev Yönetimi")
@@ -235,9 +224,6 @@ elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
         for s in st.session_state.veri.get("exams", []):
             st.write(f"🎯 **{s.get('ders')}**: {s.get('konu')} (Tarih: {s.get('tarih')})")
 
-# ==========================================
-# 6. EKSİK KONULARIM
-# ==========================================
 elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
     geri_don_butonu()
     st.title("❌ Eksik Konu Takibi")
@@ -265,9 +251,6 @@ elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
                     verileri_kaydet(st.session_state.veri)
                     st.rerun()
 
-# ==========================================
-# 7. DERS ÇALIŞ
-# ==========================================
 elif st.session_state.aktif_sayfa == "📚 Ders Çalış":
     geri_don_butonu()
     st.title("📚 Akıllı Ders Çalışma Asistanı")
@@ -283,9 +266,6 @@ elif st.session_state.aktif_sayfa == "📚 Ders Çalış":
         if gemini_model:
             st.markdown(gemini_model.generate_content(f"10. sınıf öğrencisinin sorusu: {soru}").text)
 
-# ==========================================
-# 8. HIZLI PDF ÖZETLE
-# ==========================================
 elif st.session_state.aktif_sayfa == "📄 Hızlı PDF Özetle":
     geri_don_butonu()
     st.title("📄 Hızlı PDF Özetle")
@@ -294,9 +274,6 @@ elif st.session_state.aktif_sayfa == "📄 Hızlı PDF Özetle":
         if gemini_model:
             st.markdown(gemini_model.generate_content(f"Özetle:\n\n{pdf_text}").text)
 
-# ==========================================
-# 9. YANLIŞLARIM & HATA DEFTERİ
-# ==========================================
 elif st.session_state.aktif_sayfa == "❌ Yanlışlarım & Hata Defteri":
     geri_don_butonu()
     st.title("❌ Yanlışlarım & Hata Defteri")
@@ -318,9 +295,6 @@ elif st.session_state.aktif_sayfa == "❌ Yanlışlarım & Hata Defteri":
             if gemini_model:
                 st.markdown(gemini_model.generate_content(f"Şu soruyu çöz:\n\n{hata_notu}").text)
 
-# ==========================================
-# 10. YAPAY ZEKA KOÇ (ASİSTAN)
-# ==========================================
 elif st.session_state.aktif_sayfa == "🤖 Yapay Zeka Koç (Asistan)":
     geri_don_butonu()
     st.title("🤖 Yapay Zeka Koçun")
