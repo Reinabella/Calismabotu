@@ -13,14 +13,15 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- GEMINI API BAĞLANTISI (GÜVENLİ KONTROL) ---
+# --- GEMINI API BAĞLANTISI (GÜNCELLENMİŞ MODEL) ---
 gemini_model = None
 try:
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
         if api_key and api_key.strip():
             genai.configure(api_key=api_key)
-            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+            # En güncel kararlı model adı kullanıldı
+            gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 except Exception as e:
     print(f"API Bağlantı Hatası: {e}")
 
@@ -188,7 +189,7 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
 
     if st.button("✨ Bugünün Programını Oluştur", type="primary"):
         if not gemini_model:
-            st.error("⚠️ Gemini API anahtarı doğrulanamadı! Lütfen Streamlit Cloud 'Secrets' bölümünden anahtarını kontrol edip uygulamayı yeniden başlat (Reboot).")
+            st.error("⚠️ Gemini API anahtarı doğrulanamadı!")
         else:
             with st.spinner("Koçun ödevlerini ve eksik konularını inceliyor..."):
                 try:
