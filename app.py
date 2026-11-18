@@ -81,7 +81,7 @@ def pdf_olustur(baslik, icerik):
     pdf.multi_cell(0, 7, turkce_temizle(icerik))
     return bytes(pdf.output())
 
-# --- SOL MENÜYÜ GİZLE ---
+# --- SOL MENÜYÜ GİZLE VE ŞIK HALE GETİR ---
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {display: none;}
@@ -89,7 +89,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1. ANA SAYFA
+# 1. ANA SAYFA & ÇİZDİĞİN MENÜ DÜZENİ
 # ==========================================
 if st.session_state.aktif_sayfa == "🏠 Ana Sayfa":
     st.markdown("<p style='font-size: 0.9rem; color: #888; margin-bottom: 0;'>🏠 Ana sayfadasın</p>", unsafe_allow_html=True)
@@ -131,7 +131,7 @@ def geri_don_butonu():
 # ==========================================
 # 2. TAKVİMİM
 # ==========================================
-if st.session_state.aktif_sayfa == "📅 Takvimim":
+elif st.session_state.aktif_sayfa == "📅 Takvimim":
     geri_don_butonu()
     st.title("📅 Sınav Takvimi")
     sinavlar = st.session_state.veri.get("exams", [])
@@ -142,7 +142,7 @@ if st.session_state.aktif_sayfa == "📅 Takvimim":
         st.warning("Kayıtlı sınav bulunmuyor.")
 
 # ==========================================
-# 3. GÜNLÜK PROGRAM
+# 3. GÜNLÜK PROGRAM (GÖREV SİLME ÖZELLİKLİ)
 # ==========================================
 elif st.session_state.aktif_sayfa == "📅 Günlük Program":
     geri_don_butonu()
@@ -164,7 +164,7 @@ elif st.session_state.aktif_sayfa == "📅 Günlük Program":
             tasks[i]["tamamlandi"] = durum
             verileri_kaydet(st.session_state.veri)
             st.rerun()
-        
+            
         if t["tamamlandi"]:
             col2.markdown("### 🥳")
         else:
@@ -236,7 +236,7 @@ elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
             st.write(f"🎯 **{s.get('ders')}**: {s.get('konu')} (Tarih: {s.get('tarih')})")
 
 # ==========================================
-# 6. EKSİK KONULARIM
+# 6. EKSİK KONULARIM ("HALLETTİM 😎" BUTONLU)
 # ==========================================
 elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
     geri_don_butonu()
@@ -245,6 +245,8 @@ elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
     secilen_ders_eksik = st.selectbox("Ders Seç", dersler)
     yeni_eksik = st.text_input("Eksik Konu Adı")
     if st.button("Eksik Konu Ekle") and yeni_eksik:
+        if secilen_ders_eksik not in st.session_state.veri["missing_topics"]:
+            st.session_state.veri["missing_topics"][secilen_ders_eksik] = []
         st.session_state.veri["missing_topics"][secilen_ders_eksik].append(yeni_eksik)
         verileri_kaydet(st.session_state.veri)
         st.success("Eklendi!")
@@ -256,7 +258,7 @@ elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
         if konular:
             st.markdown(f"**{d}**")
             for idx, konu in enumerate(konular):
-                col1, col2 = st.columns([4, 1])
+                col1, col2 = st.columns([3, 2])
                 col1.write(f"• {konu}")
                 if col2.button("Hallettim 😎", key=f"hallettim_{d}_{idx}"):
                     konular.pop(idx)
