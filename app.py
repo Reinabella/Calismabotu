@@ -142,7 +142,7 @@ elif st.session_state.aktif_sayfa == "📅 Takvimim":
         st.warning("Kayıtlı sınav bulunmuyor.")
 
 # ==========================================
-# 3. GÜNLÜK PROGRAM (GÖREV SİLME ÖZELLİKLİ)
+# 3. GÜNLÜK PROGRAM
 # ==========================================
 elif st.session_state.aktif_sayfa == "📅 Günlük Program":
     geri_don_butonu()
@@ -236,7 +236,7 @@ elif st.session_state.aktif_sayfa == "📝 Sınavlarım & Ödevlerim":
             st.write(f"🎯 **{s.get('ders')}**: {s.get('konu')} (Tarih: {s.get('tarih')})")
 
 # ==========================================
-# 6. EKSİK KONULARIM ("HALLETTİM 😎" BUTONLU)
+# 6. EKSİK KONULARIM
 # ==========================================
 elif st.session_state.aktif_sayfa == "❌ Eksik Konularım":
     geri_don_butonu()
